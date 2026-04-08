@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GDP per Capita vs Conspiracism — Stepwise Scatter Plot</title>
+  <script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+  <style>
+    :root {
+      --neutral: #a8aaad;
+      --colonized: #0d7680;
+      --colonizer: #990f3d;
+      --ink: #1f1f1f;
+      --grid: #d9d9d9;
+      --muted: #5f6368;
+      --panel: #ffffff;
+      --border: #d7d7d7;
+      --bg: #ffffff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+    }
+    .wrapper {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 20px 18px 26px;
+    }
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.9rem;
+      line-height: 1.15;
+    }
+    .subtitle {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: 0.98rem;
+      line-height: 1.45;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin: 0 0 12px;
+    }
+    .step-btn {
+      border: 1px solid var(--border);
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 12px;
+      border-radius: 999px;
+      font-size: 0.95rem;
+      line-height: 1;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .step-btn:hover {
+      border-color: #9f9f9f;
+      transform: translateY(-1px);
+    }
+    .step-btn.active {
+      background: var(--ink);
+      border-color: var(--ink);
+      color: #fff;
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px 8px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .step-head {
+      display: block;
+      margin: 0 0 8px;
+    }
+    .step-title {
+      margin: 0 0 4px;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .step-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+      line-height: 1.4;
+    }
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px 18px;
+      align-items: center;
+      margin: 8px 0 4px;
+      min-height: 24px;
+      font-size: 0.94rem;
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--ink);
+    }
+    .swatch-circle, .swatch-triangle {
+      display: inline-block;
+      flex: 0 0 auto;
+    }
+    .swatch-circle {
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      border: 1.2px solid currentColor;
+    }
+    .swatch-triangle {
+      width: 0;
+      height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 14px solid currentColor;
+      transform: translateY(-1px);
+    }
+    #chart {
+      width: 100%;
+      height: 470px;
+    }
+    .footnote {
+      margin: 10px 2px 0;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    @media (max-width: 720px) {
+      .wrapper { padding: 16px 12px 22px; }
+      h1 { font-size: 1.55rem; }
+      #chart { height: 430px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <h1>GDP per Capita and Conspiracism across Countries</h1>
+    <p class="subtitle">A stepwise interactive scatter plot using the updated dataset. Hover over any point to see the country name and values. The fifth view adds manually positioned labels with transparent backgrounds, and the sixth adds a light Western Europe grouping box.</p>
+
+    <div class="controls" aria-label="Plot steps">
+      <button class="step-btn active" data-step="1">1. Baseline</button>
+      <button class="step-btn" data-step="2">2. Add colonized</button>
+      <button class="step-btn" data-step="3">3. Add colonizers</button>
+      <button class="step-btn" data-step="4">4. Neo-Europe triangles</button>
+      <button class="step-btn" data-step="5">5. Country names</button>
+      <button class="step-btn" data-step="6">6. Western Europe box</button>
+    </div>
+
+    <div class="panel">
+      <div class="step-head">
+        <p id="stepTitle" class="step-title"></p>
+        <p id="stepNote" class="step-note"></p>
+      </div>
+      <div id="legend" class="legend" aria-label="Legend"></div>
+      <div id="chart"></div>
+    </div>
+
+    <p class="footnote">Source: Mert's Demo Dataset for UW Bothell IAS.</p>
+  </div>
+
+  <script>
+    const DATA = [{"country":"Nigeria","conspiracism":78.0,"gdp":2797.0,"colonized":1,"colonizer":0,"neoEurope":0},{"country":"South Africa","conspiracism":68.0,"gdp":5581.0,"colonized":1,"colonizer":0,"neoEurope":0},{"country":"Mexico","conspiracism":59.0,"gdp":8841.0,"colonized":1,"colonizer":0,"neoEurope":0},{"country":"Turkey","conspiracism":57.0,"gdp":8798.0,"colonized":0,"colonizer":0,"neoEurope":0},{"country":"Greece","conspiracism":56.0,"gdp":17887.0,"colonized":0,"colonizer":0,"neoEurope":0},{"country":"Spain","conspiracism":55.0,"gdp":27234.0,"colonized":0,"colonizer":1,"neoEurope":0},{"country":"Egypt","conspiracism":55.0,"gdp":3511.0,"colonized":1,"colonizer":0,"neoEurope":0},{"country":"Brazil","conspiracism":47.0,"gdp":7074.0,"colonized":1,"colonizer":0,"neoEurope":0},{"country":"Poland","conspiracism":47.0,"gdp":16151.0,"colonized":0,"colonizer":0,"neoEurope":0},{"country":"Hungary","conspiracism":46.0,"gdp":16387.0,"colonized":0,"colonizer":0,"neoEurope":0},{"country":"Italy","conspiracism":45.0,"gdp":32091.0,"colonized":0,"colonizer":1,"neoEurope":0},{"country":"Saudi Arabia","conspiracism":44.0,"gdp":24339.0,"colonized":0,"colonizer":0,"neoEurope":0},{"country":"United States","conspiracism":37.0,"gdp":63516.0,"colonized":1,"colonizer":0,"neoEurope":1},{"country":"France","conspiracism":36.0,"gdp":39170.0,"colonized":0,"colonizer":1,"neoEurope":0},{"country":"Canada","conspiracism":36.0,"gdp":43538.0,"colonized":1,"colonizer":0,"neoEurope":1},{"country":"Australia","conspiracism":33.0,"gdp":51983.0,"colonized":1,"colonizer":0,"neoEurope":1},{"country":"Germany","conspiracism":31.0,"gdp":47395.0,"colonized":0,"colonizer":1,"neoEurope":0},{"country":"United Kingdom","conspiracism":28.0,"gdp":40813.0,"colonized":0,"colonizer":1,"neoEurope":0},{"country":"Sweden","conspiracism":23.0,"gdp":52569.0,"colonized":0,"colonizer":0,"neoEurope":0},{"country":"Denmark","conspiracism":20.0,"gdp":60985.0,"colonized":0,"colonizer":0,"neoEurope":0},{"country":"Japan","conspiracism":19.0,"gdp":40029.0,"colonized":0,"colonizer":0,"neoEurope":0}];
+
+    const COLORS = {
+      neutral: '#8c8c8c',
+      colonized: '#0072B2',
+      colonizer: '#D55E00'
+    };
+
+    const STEP_META = {
+      1: {
+        title: 'Step 1. Baseline scatter plot',
+        note: 'All countries begin as neutral dots so the underlying relationship is visible before any grouping is added.'
+      },
+      2: {
+        title: 'Step 2. Highlight colonized countries',
+        note: 'Countries coded as colonized are highlighted in a colorblind-safe blue. All others stay neutral gray.'
+      },
+      3: {
+        title: 'Step 3. Add colonizer countries',
+        note: 'Colonizers are added in a colorblind-safe orange, while countries coded as neither remain neutral gray.'
+      },
+      4: {
+        title: 'Step 4. Neo-Europe becomes a shape cue',
+        note: 'Neo-Europe countries are shown as triangles. Color still carries the historical coding with a colorblind-safe blue/orange palette.'
+      },
+      5: {
+        title: 'Step 5. Country-name view',
+        note: 'Country names are placed beside each point with transparent label backgrounds. A few crowded cases are manually nudged.'
+      },
+      6: {
+        title: 'Step 6. Western Europe grouping box',
+        note: 'A very light gray rectangle and label are added as a visual grouping aid around the Western Europe and Neo-Europe cluster. It is an annotation, not a data-derived cluster.'
+      }
+    };
+
+    const LABEL_ANNOTATIONS = {
+      // Edit these xshift / yshift values to fine-tune crowded labels in Steps 5 and 6.
+      // Positive xshift moves a label farther right. Positive yshift moves it higher.
+      'Nigeria': { xshift: 0, yshift: 5 },
+      'South Africa': { xshift: 0, yshift: 5 },
+      'Mexico': { xshift: 0, yshift: 5 },
+      'Turkey': { xshift: -15, yshift: 5 },
+      'Greece': { xshift: 0, yshift: 5 },
+      'Spain': { xshift: 0, yshift: 5 },
+      'Egypt': { xshift: 0, yshift: 5 },
+      'Brazil': { xshift: 0, yshift: 5 },
+      'Poland': { xshift: 2, yshift: 5 },
+      'Hungary': { xshift: -50, yshift: -18 },
+      'Italy': { xshift: 0, yshift: 8 },
+      'Saudi Arabia': { xshift: 0, yshift: 5 },
+      'United States': { xshift: 0, yshift: 5 },
+      'France': { xshift: 2, yshift: 2 },
+      'Canada': { xshift: 0, yshift: 5 },
+      'Australia': { xshift: 0, yshift: 5 },
+      'Germany': { xshift: -5, yshift: 5 },
+      'United Kingdom': { xshift: -10, yshift: 5 },
+      'Sweden': { xshift: 0, yshift: 5 },
+      'Denmark': { xshift: 0, yshift: 5 },
+      'Japan': { xshift: 0, yshift: 5 }
+    };
+
+    function filtered(arr, fn) {
+      return arr.filter(fn);
+    }
+
+    function getPointColor(d) {
+      if (d.colonized === 1) return COLORS.colonized;
+      if (d.colonizer === 1) return COLORS.colonizer;
+      return COLORS.neutral;
+    }
+
+    function makeTrace(arr, name, color, symbol, markerSize = 13) {
+      if (!arr.length) return null;
+      return {
+        type: 'scatter',
+        mode: 'markers',
+        name,
+        x: arr.map(d => d.gdp),
+        y: arr.map(d => d.conspiracism),
+        text: arr.map(d => d.country),
+        marker: {
+          size: markerSize,
+          color,
+          symbol,
+          opacity: 0.96,
+          line: { color, width: 1.2 }
+        },
+        hovertemplate:
+          '<b>%{text}</b><br>' +
+          'GDP per capita: %{x:$,.0f}<br>' +
+          'Conspiracism: %{y}%<extra></extra>'
+      };
+    }
+
+    function getStepTraces(step) {
+      const neither = filtered(DATA, d => d.colonized === 0 && d.colonizer === 0);
+      const colonized = filtered(DATA, d => d.colonized === 1);
+      const colonizer = filtered(DATA, d => d.colonizer === 1);
+
+      if (step === 1) {
+        return [makeTrace(DATA, 'Countries', COLORS.neutral, 'circle')].filter(Boolean);
+      }
+
+      if (step === 2) {
+        return [
+          makeTrace(filtered(DATA, d => d.colonized === 0), 'Other countries', COLORS.neutral, 'circle'),
+          makeTrace(colonized, 'Colonized', COLORS.colonized, 'circle')
+        ].filter(Boolean);
+      }
+
+      if (step === 3) {
+        return [
+          makeTrace(neither, 'Neither', COLORS.neutral, 'circle'),
+          makeTrace(colonized, 'Colonized', COLORS.colonized, 'circle'),
+          makeTrace(colonizer, 'Colonizer', COLORS.colonizer, 'circle')
+        ].filter(Boolean);
+      }
+
+      if (step === 4) {
+        return [
+          makeTrace(filtered(neither, d => d.neoEurope === 0), 'Neither', COLORS.neutral, 'circle'),
+          makeTrace(filtered(neither, d => d.neoEurope === 1), 'Neither + Neo-Europe', COLORS.neutral, 'triangle-up'),
+          makeTrace(filtered(colonized, d => d.neoEurope === 0), 'Colonized', COLORS.colonized, 'circle'),
+          makeTrace(filtered(colonized, d => d.neoEurope === 1), 'Colonized + Neo-Europe', COLORS.colonized, 'triangle-up'),
+          makeTrace(filtered(colonizer, d => d.neoEurope === 0), 'Colonizer', COLORS.colonizer, 'circle'),
+          makeTrace(filtered(colonizer, d => d.neoEurope === 1), 'Colonizer + Neo-Europe', COLORS.colonizer, 'triangle-up')
+        ].filter(Boolean);
+      }
+
+      return [
+        makeTrace(filtered(neither, d => d.neoEurope === 0), 'Neither', COLORS.neutral, 'circle', 10),
+        makeTrace(filtered(neither, d => d.neoEurope === 1), 'Neither + Neo-Europe', COLORS.neutral, 'triangle-up', 10),
+        makeTrace(filtered(colonized, d => d.neoEurope === 0), 'Colonized', COLORS.colonized, 'circle', 10),
+        makeTrace(filtered(colonized, d => d.neoEurope === 1), 'Colonized + Neo-Europe', COLORS.colonized, 'triangle-up', 10),
+        makeTrace(filtered(colonizer, d => d.neoEurope === 0), 'Colonizer', COLORS.colonizer, 'circle', 10),
+        makeTrace(filtered(colonizer, d => d.neoEurope === 1), 'Colonizer + Neo-Europe', COLORS.colonizer, 'triangle-up', 10)
+      ].filter(Boolean);
+    }
+
+    function makeStep5Annotations() {
+      return DATA.map(d => {
+        const pos = LABEL_ANNOTATIONS[d.country] || { xshift: 10, yshift: 8 };
+        return {
+          x: d.gdp,
+          y: d.conspiracism,
+          xref: 'x',
+          yref: 'y',
+          text: d.country,
+          showarrow: false,
+          xanchor: 'left',
+          yanchor: 'bottom',
+          xshift: pos.xshift,
+          yshift: pos.yshift,
+          font: { size: 12, color: '#1f1f1f' },
+          bgcolor: 'rgba(0,0,0,0)',
+          bordercolor: 'rgba(0,0,0,0)',
+          borderpad: 0,
+          align: 'left'
+        };
+      });
+    }
+
+    function legendItemCircle(color, label) {
+      return `<span class="legend-item" style="color:${color}"><span class="swatch-circle" style="background:${color}"></span><span style="color:var(--ink)">${label}</span></span>`;
+    }
+
+    function legendItemTriangle(color, label) {
+      return `<span class="legend-item" style="color:${color}"><span class="swatch-triangle"></span><span style="color:var(--ink)">${label}</span></span>`;
+    }
+
+    function updateLegend(step) {
+      const legend = document.getElementById('legend');
+      if (step === 1) {
+        legend.innerHTML = legendItemCircle(COLORS.neutral, 'All countries');
+        return;
+      }
+      if (step === 2) {
+        legend.innerHTML = [
+          legendItemCircle(COLORS.colonized, 'Colonized'),
+          legendItemCircle(COLORS.neutral, 'All others')
+        ].join('');
+        return;
+      }
+      if (step === 3) {
+        legend.innerHTML = [
+          legendItemCircle(COLORS.colonized, 'Colonized'),
+          legendItemCircle(COLORS.colonizer, 'Colonizer'),
+          legendItemCircle(COLORS.neutral, 'Neither')
+        ].join('');
+        return;
+      }
+      legend.innerHTML = [
+        legendItemCircle(COLORS.colonized, 'Colonized'),
+        legendItemCircle(COLORS.colonizer, 'Colonizer'),
+        legendItemCircle(COLORS.neutral, 'Neither'),
+        legendItemTriangle(COLORS.neutral, 'Neo-Europe = triangle')
+      ].join('');
+    }
+
+    const baseLayout = {
+      paper_bgcolor: '#ffffff',
+      plot_bgcolor: '#ffffff',
+      font: { family: 'Arial, Helvetica, sans-serif', size: 14, color: '#1f1f1f' },
+      margin: { l: 78, r: 22, t: 14, b: 64 },
+      hovermode: 'closest',
+      showlegend: false,
+      xaxis: {
+        title: { text: 'GDP per Capita (current USD, 2020)' },
+        range: [0, 68000],
+        tickformat: '$,',
+        showgrid: true,
+        gridcolor: '#d9d9d9',
+        zeroline: false
+      },
+      yaxis: {
+        title: { text: 'Conspiracism (%)' },
+        range: [16, 80],
+        tick0: 20,
+        dtick: 10,
+        showgrid: true,
+        gridcolor: '#d9d9d9',
+        zeroline: false
+      }
+    };
+
+    function getLayoutForStep(step) {
+      const layout = JSON.parse(JSON.stringify(baseLayout));
+
+      if (step === 5 || step === 6) {
+        layout.annotations = makeStep5Annotations();
+      } else {
+        layout.annotations = [];
+      }
+
+      if (step === 6) {
+        layout.annotations.push({
+          x: 55500,
+          y: 48.5,
+          xref: 'x',
+          yref: 'y',
+          text: 'Western Europe and Neo-Europes',
+          showarrow: false,
+          font: { size: 13, color: 'rgba(31,31,31,0.55)' },
+          bgcolor: 'rgba(0,0,0,0)',
+          bordercolor: 'rgba(0,0,0,0)'
+        });
+
+        layout.shapes = [
+          {
+            type: 'rect',
+            xref: 'x',
+            yref: 'y',
+            x0: 38500,
+            x1: 72000,
+            y0: 19.5,
+            y1: 39.8,
+            fillcolor: 'rgba(168,170,173,0.10)',
+            line: {
+              color: 'rgba(168,170,173,0.18)',
+              width: 1
+            },
+            layer: 'below'
+          }
+        ];
+      } else {
+        layout.shapes = [];
+      }
+
+      return layout;
+    }
+
+    const config = {
+      responsive: true,
+      displaylogo: false,
+      toImageButtonOptions: { format: 'png', filename: 'conspiracism_gdp_stepwise_scatter' }
+    };
+
+    function setStep(step) {
+      const traces = getStepTraces(step);
+      Plotly.react('chart', traces, getLayoutForStep(step), config);
+      document.getElementById('stepTitle').textContent = STEP_META[step].title;
+      document.getElementById('stepNote').textContent = STEP_META[step].note;
+      updateLegend(step);
+      document.querySelectorAll('.step-btn').forEach(btn => {
+        btn.classList.toggle('active', Number(btn.dataset.step) === step);
+      });
+    }
+
+    document.querySelectorAll('.step-btn').forEach(btn => {
+      btn.addEventListener('click', () => setStep(Number(btn.dataset.step)));
+    });
+
+    setStep(1);
+  </script>
+</body>
+</html>
